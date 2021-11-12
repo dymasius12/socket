@@ -1,12 +1,9 @@
-/*
-UDP socket for transferring big file in small data units
-*/
-#include "headsock.h"
+#include "headsocket.h"
 
 
-//transmission function
+//TRANSMISSION FUNCTION
 float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *len); 
-//calculate the time interval between out and in
+//CALCULATING PROCESS FOR TIME INTERVAL BETWEEN OUT AND IN
 void tv_sub(struct  timeval *out, struct timeval *in);	    
 
 int main(int argc, char **argv)
@@ -24,14 +21,15 @@ int main(int argc, char **argv)
 		printf("parameters not match");
 	}
 
-    //get host's information
+    //THIS IS GETTING HOST INFO
+
 	sh = gethostbyname(argv[1]);	                      
 	if (sh == NULL) {
 		printf("error when gethostby name");
 		exit(0);
 	}
 
-    //print the remote host's information
+    //THIS IS PRINTING REMOTE HOST INFO
     printf("canonical name: %s\n", sh->h_name);					
 	for (pptr=sh->h_aliases; *pptr != NULL; pptr++){
         printf("the aliases name is: %s\n", *pptr);
@@ -45,7 +43,9 @@ int main(int argc, char **argv)
 		break;
 	}
 
-    //create the socket
+    //CREATING SOCKET
+
+	
     addrs = (struct in_addr **)sh->h_addr_list;
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);            
 	if (sockfd<0) {
@@ -58,12 +58,12 @@ int main(int argc, char **argv)
 	memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr));
 	bzero(&(ser_addr.sin_zero), 8);
 	
-	if((fp = fopen ("myfile.txt","r+t")) == NULL) {
+	if((fp = fopen ("inputfile.txt","r+t")) == NULL) {
 		printf("File doesn't exit\n");
 		exit(0);
 	}
 
-    //perform the transmission and receiving
+    //PERFORMING TRANSMISSION AND RECEIVING
 	ti = str_cli(fp, sockfd, (struct sockaddr *)&ser_addr, sizeof(struct sockaddr_in), &len);
 	rt = (len/(float)ti);           //caculate the average transmission rate
     th = 8*rt/(float)1000;
@@ -78,11 +78,12 @@ int main(int argc, char **argv)
 
 float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *len) {
 	char *buf;
-    //lsize: entire file size; ci: curr index of buf
+    //LSIZE: ENTIRE FILE SIZE
+	//ci is current index of buf
 	long lsize, ci = 0;   
 	char sends[DATALEN];    
 	struct ack_so ack;
-    // slen: len of string to send
+    // SLEN: LEN OF THE STRING
 	int n, slen;  
 	float time_inv = 0.0;
 	struct timeval sendt, recvt;
@@ -94,15 +95,15 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
     printf("The file length is %d bytes\n", (int)lsize);
 	printf("the packet length is %d bytes\n",DATALEN);
 
-    // allocate memory to contain the whole file.
+    // MEMORY ALLOCATION TO CONTAIN WHOLE THING
 	buf = (char *) malloc (lsize+1);
 	if (buf == NULL) exit (2);
 
-    // copy the file into the buffer.
+    // COPYING THE FILE INTO THE BUFFER 
 	fread (buf,1,lsize,fp);
 
-    /*** the whole file is loaded in the buffer. ***/
-    //append the end byte (extra byte sent to server)
+    
+    //APPENDING THE END BYTE 
 	buf[lsize] ='\0';		
     //get the current time				  
 	gettimeofday(&sendt, NULL);		
@@ -119,7 +120,7 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
 
         memcpy(sends, (buf+ci), slen);
         
-		//send the data
+		//SENDING DATA
 		n = sendto(sockfd, &sends, slen, 0, addr, addrlen);
 		if(n == -1) {
 			printf("send error!");								
@@ -127,7 +128,8 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
 		}
 		printf("[client]send a packet\n");
         
-        //receive the ack
+        //RECEIVE ACK
+
         if ((n = recvfrom(sockfd, &ack, 2, 0, addr, (socklen_t*)&addrlen))== -1) { 
 			//no ack received
             printf("error when receiving ack\n");
@@ -146,16 +148,19 @@ float str_cli(FILE *fp, int sockfd, struct sockaddr *addr, int addrlen, long *le
         
 	}
 
-    //get current time
+    //GET THE CURRENT TIMING 
+
     gettimeofday(&recvt, NULL);       
     *len= ci;    
-    // get the whole trans time
+    // GET WHOLE TRANSMISSION
+
+
     tv_sub(&recvt, &sendt);              
     time_inv += (recvt.tv_sec)*1000.0 + (recvt.tv_usec)/1000.0;
     return(time_inv);
 }
 
-
+//TV_SUB FUNCTION
 void tv_sub(struct  timeval *out, struct timeval *in) {
 	if ((out->tv_usec -= in->tv_usec) <0) {
 		--out ->tv_sec;

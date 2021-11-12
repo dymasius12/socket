@@ -1,6 +1,6 @@
-#include "headsock.h"
+#include "headsocket.h"
 
-// transmitting and receiving function
+// FUNCTION FOR TRANSMITTING AND RECEIVING 
 void str_ser(int sockfd, struct sockaddr *addr, int addrlen);             
 
 int main(void)
@@ -8,7 +8,7 @@ int main(void)
 	int sockfd, ret;
 	struct sockaddr_in my_addr;
 
-	//create socket
+	//CREATING THE SOCKET
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);          
 	if (sockfd<0)
 	{
@@ -20,7 +20,7 @@ int main(void)
 	my_addr.sin_port = htons(MYUDP_PORT);
 	my_addr.sin_addr.s_addr = INADDR_ANY;//inet_addr("172.0.0.1");
 	bzero(&(my_addr.sin_zero), 8);
-	//bind socket
+	//BINDING THE SOCKET
 	ret = bind(sockfd, (struct sockaddr *) &my_addr, sizeof(struct sockaddr));                
 	if (ret<0) {
 		printf("error in binding");
@@ -28,7 +28,10 @@ int main(void)
 	}
 	
 	printf("waiting for data\n");
-	//receive packet and response
+
+	//RECEIVING THE PACKET AND RESPONSE
+
+
 	str_ser(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr_in));                
   
 	close(sockfd);
@@ -48,58 +51,60 @@ void str_ser(int sockfd, struct sockaddr *addr, int addrlen)
 	while(!end) {
 		printf("===========\n");
 
-		// error simulation
+		// THIS IS THE ERROR SIMULATION
         randomnum = (double) rand() / (RAND_MAX);
         printf("random number is %f \n", randomnum);
         if(randomnum < ERROR_PROB) {
-            // damaged packet
+            //THE DAMAGED PACKET
             printf("[server] damaged packet\n");
-			// send NACK 
+			//SEND NEGATIVE ACK 
 			ack.num = -1;
 			ack.len = 0;
 			if ((n = sendto(sockfd, &ack, 2, 0, addr, addrlen))==-1) {
-				printf("send error!");								
+				printf("send error");								
 				exit(1);
 			}
-			printf("[server] sent an NACK\n");
+			printf("[server] sent a NACK\n");
         }else {
-			// complete packet
+			//COMPLETE PACKET:
+			
 			if ((n= recvfrom(sockfd, &recvs, DATALEN, 0, addr, (socklen_t *)&addrlen))==-1) {
-				printf("error when receiving\n");
+				printf("error when do receiving\n");
 				exit(1);
 			}
 			printf("[server] received a packet\n");
 			
-			//end of the file
+			//END OF FILE:
+
 			if (recvs[n-1] == '\0')	{
 				end = 1;
 				n --;
 			}
 
-			// process the received packet
+			//THIS IS PROCESSING THE FILE RECEIVED BEFORE
 			memcpy((buf+lseek), recvs, n);
 			printf("%d bytes of data received: %s\n", n, recvs);
 			lseek += n;
 
-			// send ack 
+			//SEND AN ACK
 			ack.num = 1;
 			ack.len = 0;
 			if ((n = sendto(sockfd, &ack, 2, 0, addr, addrlen))==-1) {
-				printf("send error!");								
+				printf("send error");								
 				exit(1);
 			}
-			printf("[server] sent an ack\n");
+			printf("[server] sent a ack\n");
 		}
 
 		printf("the end: %d\n", end);
 	}
   
-	if ((fp = fopen ("myUDPreceive.txt","wt")) == NULL)
+	if ((fp = fopen ("UDPreceive.txt","wt")) == NULL)
 	{
 		printf("File doesn't exist\n");
 		exit(0);
 	}
-	fwrite (buf , 1 , lseek , fp);					//write data into file
+	fwrite (buf , 1 , lseek , fp); //WRITING DATA TO FILE
 	fclose(fp);
-	printf("a file has been successfully received!\nthe total data received is %d bytes\n", (int)lseek);
+	printf("A file has been successfully received!\nThe total data received is: %d bytes\n", (int)lseek);
 }
